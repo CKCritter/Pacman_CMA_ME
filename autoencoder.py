@@ -12,11 +12,6 @@ env.reset()
 
 torch.set_default_dtype(torch.float64)
 
-plt.figure(figsize=(9, 2))
-plt.gray()
-plt.axis("off")
-_, sub = plt.subplots(2, 1);
-
 class Autoencoder(nn.Module):
     def __init__(self):
         super().__init__()
@@ -53,12 +48,13 @@ optimizer = torch.optim.Adam(model.parameters(),
 num_epochs = 1000
 outputs = []
 observation, reward, done, info = env.step(env.action_space.sample())
-f = lambda x: x / 255
+
+
 for epoch in range(num_epochs):
     #for i in range(0, 1000):
     observation, reward, done, info = env.step(env.action_space.sample())
     obs = observation.reshape(1, 3, 160, 210)
-    
+    f = lambda x: x / 255
     obs = f(obs)
     obs = torch.from_numpy( obs.astype('double') )
     recon = model(obs)
@@ -73,25 +69,31 @@ for epoch in range(num_epochs):
     if done:
         env.reset()
         
-for k in range(1001, num_epochs, 100):    
+for k in range(int(num_epochs*0.9), num_epochs, int(num_epochs*0.01)):
     imgs = outputs[k][1].detach().numpy()
     recon = outputs[k][2].detach().numpy()
+    _, sub = plt.subplots(2, 1);
+    plt.gray()
+    plt.axis("off")
     for i, item in enumerate(imgs):
         if i >= 2: break
         Z = item.reshape(210, 160, 3)
-        sub[0].imshow(Z, interpolation='none', aspect='auto')
-
+        im = sub[0].imshow(Z, interpolation='none', aspect='auto')
+        
     for i, item in enumerate(recon):
         if i >= 2: break
         Z = item.reshape(210, 160, 3)
-        sub[1].imshow(Z, interpolation='none', aspect='auto')
+        im = sub[1].imshow(Z, interpolation='none', aspect='auto')
+
     plt.show()
 
 import cv2
+_, sub = plt.subplots(2, 1);
+plt.gray()
+plt.axis("off")
 obs = f(cv2.imread("filename - Copy.png").reshape(1, 3, 160, 210))
 sub[0].imshow(obs.reshape(210, 160, 3), interpolation='none', aspect='auto')
 obs = torch.from_numpy( obs.astype('double') )
 recon = model(obs)
 sub[1].imshow(recon.detach().numpy().reshape(210, 160, 3), interpolation='none', aspect='auto')
 plt.show()
-print("hi")
