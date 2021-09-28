@@ -16,9 +16,10 @@ class Autoencoder(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 10, (3, 3), padding=1),
+            nn.Conv2d(3, 128, 3, padding=1),
+            nn.MaxPool2d(kernel_size=3, padding=1),
             nn.ReLU(),
-            #nn.Conv2d(100, 40, (9, 9), stride=2, padding=1),
+            #nn.Conv2d(16, 64, 3, padding=1),
             #nn.ReLU(),
             #nn.Conv2d(40, 20, (1, 1), padding=1)
         )
@@ -26,9 +27,10 @@ class Autoencoder(nn.Module):
         self.decoder = nn.Sequential(
             #nn.ConvTranspose2d(20, 40, (1, 1), stride=1, padding=1, output_padding=1),
             #nn.ReLU(),
-            #nn.ConvTranspose2d(40, 100, (9, 9), stride=1, padding=1, output_padding=1),
+            #nn.ConvTranspose2d(64, 16, 3, padding=1),
             #nn.ReLU(),
-            nn.ConvTranspose2d(10, 3, (3, 3), padding=1),
+            nn.Upsample(size=(160,210)),
+            nn.ConvTranspose2d(128, 3, 3, padding=1),
             nn.Sigmoid()
         )
         
@@ -45,7 +47,7 @@ optimizer = torch.optim.Adam(model.parameters(),
                              weight_decay=1e-5)
 
 # Point to training loop video
-num_epochs = 1000
+num_epochs = 200
 outputs = []
 observation, reward, done, info = env.step(env.action_space.sample())
 
