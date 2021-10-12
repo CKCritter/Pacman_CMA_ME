@@ -10,16 +10,22 @@ import gym
 env = gym.make('MsPacman-v0')
 env.reset()
 
+from torch.utils.tensorboard import SummaryWriter
+from torchvision import datasets, transforms
+
+# Writer will output to ./runs/ directory by default
+writer = SummaryWriter()
+
 torch.set_default_dtype(torch.float64)
 
 class Autoencoder(nn.Module):
     def __init__(self):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 128, 3, padding=1),
+            nn.Conv2d(3, 128, kernel_size=3, padding=1),
             nn.MaxPool2d(kernel_size=3, padding=1),
             nn.ReLU(),
-            #nn.Conv2d(16, 64, 3, padding=1),
+            #nn.Conv2d(64, 32, 3, padding=1),
             #nn.ReLU(),
             #nn.Conv2d(40, 20, (1, 1), padding=1)
         )
@@ -27,10 +33,10 @@ class Autoencoder(nn.Module):
         self.decoder = nn.Sequential(
             #nn.ConvTranspose2d(20, 40, (1, 1), stride=1, padding=1, output_padding=1),
             #nn.ReLU(),
-            #nn.ConvTranspose2d(64, 16, 3, padding=1),
+            #nn.ConvTranspose2d(32, 64, 3, padding=1),
             #nn.ReLU(),
-            nn.Upsample(size=(160,210)),
-            nn.ConvTranspose2d(128, 3, 3, padding=1),
+            nn.UpsamplingBilinear2d(size=(160,210)),
+            nn.ConvTranspose2d(128, 3, kernel_size=3, padding=1),
             nn.Sigmoid()
         )
         
@@ -47,10 +53,9 @@ optimizer = torch.optim.Adam(model.parameters(),
                              weight_decay=1e-5)
 
 # Point to training loop video
-num_epochs = 200
+num_epochs = 2000
 outputs = []
 observation, reward, done, info = env.step(env.action_space.sample())
-
 
 for epoch in range(num_epochs):
     #for i in range(0, 1000):
@@ -70,7 +75,10 @@ for epoch in range(num_epochs):
     outputs.append((epoch, obs, recon))
     if done:
         env.reset()
-        
+
+writer.add_graph(model, outputs[num_epochs-1][2].detach())
+writer.close()
+     
 for k in range(int(num_epochs*0.9), num_epochs, int(num_epochs*0.01)):
     imgs = outputs[k][1].detach().numpy()
     recon = outputs[k][2].detach().numpy()
@@ -88,6 +96,8 @@ for k in range(int(num_epochs*0.9), num_epochs, int(num_epochs*0.01)):
         im = sub[1].imshow(Z, interpolation='none', aspect='auto')
 
     plt.show()
+
+
 
 import cv2
 _, sub = plt.subplots(2, 1);
